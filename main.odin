@@ -1,7 +1,7 @@
 package main
 
-import "core:fmt"
 import "core:os"
+import "core:fmt"
 import "core:io"
 import "core:strings"
 import "core:unicode"
@@ -9,7 +9,7 @@ import "core:unicode"
 import "core:sys/posix"
 import "core:c/libc"
 
-import "util"
+import "ascii"
 
 default_term: posix.termios
 
@@ -26,11 +26,17 @@ uncook :: proc() {
 	// raw.c_cc[.VMIN] = 0
 	// raw.c_cc[.VTIME] = 1
 	posix.tcsetattr(posix.STDIN_FILENO, .TCSAFLUSH, &raw)
+
+	// also open /dev/tty
+	open_tty()
 }
 
 recook :: proc() {
 	// reset to default ermios
 	posix.tcsetattr(posix.STDIN_FILENO, .TCSAFLUSH, &default_term)
+
+	// also close /dev/tty
+	close_tty()
 }
 
 main :: proc() {
@@ -44,6 +50,9 @@ main :: proc() {
 	sb := strings.builder_make()
 	defer strings.builder_destroy(&sb)
 
+	// initial clear
+	dprint("\r", ascii.CLEAR_LINE, sep="")
+
 	// main input loop
 	for {
 
@@ -51,13 +60,13 @@ main :: proc() {
 		c, size, err := io.read_rune(os.to_stream(os.stdin))
 		if err == .EOF || c == 3 do break
 		else if err != .None {
-			fmt.printf("Error: {}\r\n", err)
+			dprintf("Error: {}\r\n", err)
 			break
 		}
 
 		// if true {
-		// 	if unicode.is_print(c) do fmt.printf("%c", c)
-		// 	else                   do fmt.printf("%d", c)
+		// 	if unicode.is_print(c) do dprintf("%c", c)
+		// 	else                   do dprintf("%d", c)
 		// 	continue
 		// }
 
@@ -69,12 +78,14 @@ main :: proc() {
 		} else {
 			
 			// non printable, check for keybinds
-			if c == util.DEL do strings.pop_rune(&sb)
+			if c == ascii.DEL do strings.pop_rune(&sb)
 		}
 
 		// display input buffer
-		fmt.print("\r", util.CLEAR_LINE, strings.to_string(sb), sep="")
+		dprint("\r", ascii.CLEAR_LINE, strings.to_string(sb), sep="")
 
 	}
-	fmt.print("\r");	
+	dprint("\r")
+
+	fmt.println(strings.to_string(sb))
 }
