@@ -5,6 +5,7 @@ import "core:fmt"
 import "core:io"
 import "core:strings"
 import "core:unicode"
+import "core:terminal"
 
 import "core:sys/posix"
 import "core:c/libc"
@@ -50,15 +51,19 @@ main :: proc() {
 	sb := strings.builder_make()
 	defer strings.builder_destroy(&sb)
 
-	// initial clear
-	dprint("\r", ascii.CLEAR_LINE, sep="")
+	// add working directory to builder
+	wkdir, _ := os.get_working_directory(context.temp_allocator)
+	strings.write_string(&sb, wkdir)
 
 	// main input loop
 	for {
+		
+		// display input buffer
+		dprint("\r", ascii.CLEAR_LINE, strings.to_string(sb), sep="")
 
 		// read input and handle errors and exits
 		c, size, err := io.read_rune(os.to_stream(os.stdin))
-		if err == .EOF || c == 3 do break
+		if err == .EOF || c == 3 || c == 13 do break
 		else if err != .None {
 			dprintf("Error: {}\r\n", err)
 			break
@@ -80,12 +85,14 @@ main :: proc() {
 			// non printable, check for keybinds
 			if c == ascii.DEL do strings.pop_rune(&sb)
 		}
-
-		// display input buffer
-		dprint("\r", ascii.CLEAR_LINE, strings.to_string(sb), sep="")
-
 	}
-	dprint("\r")
 
-	fmt.println(strings.to_string(sb))
+	// delete all text, move back to start
+	dprint("\r", ascii.CLEAR_LINE, sep="")
+
+	// output the buffer
+	fmt.print(strings.to_string(sb))
+	if terminal.is_terminal(os.stdout) {
+		fmt.print("\r\n")
+	}
 }
