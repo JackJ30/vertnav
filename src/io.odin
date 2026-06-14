@@ -30,9 +30,9 @@ dprint :: proc(args: ..any, sep: string = " ", flush: bool = true) -> int {
 /* get key */
 
 Modifier :: enum {
-	Ctrl,
 	Shift,
 	Alt,
+	Ctrl,
 }
 ModifierSet :: bit_set[Modifier]
 
@@ -65,22 +65,34 @@ read_press :: proc() -> (KeyPress, bool) {
 		return kp, false
 	}
 
-	// by default we're giving back the rune
-	kp.key = c
+	// there is a loop so that these parsing can be reused when we handle weird
+	// unicode things
+	// todo(jqj): handle weird unicode things
+	for {
 
-	// if the character isn't printable, check and see if it's a NamedKey
-	if !unicode.is_print(c) {
-		if c == ascii.DEL do kp.key = NamedKey.Delete
-		if c == ascii.CR  do kp.key = NamedKey.Return
+		// check for single byte named keys
+		if c == ascii.CR  { kp.key = NamedKey.Return; break }
+		if c == ascii.DEL { kp.key = NamedKey.Delete; break }
+		if c == ascii.HT  { kp.key = NamedKey.Tab   ; break }
+
+		// check for CTRL+ASCII
+		if c >= 1 && c <= 26 {
+			kp.key = c + 96
+			kp.modifiers += { .Ctrl }
+			break
+		}
+
+		// if it's printable 
+		if unicode.is_print(c) {
+			kp.key = c
+			break
+		}
+
+		// otherwise no key
+		kp.key = nil
+		break
 	}
 
-	// todo(jqj): what to return if it isn't printable or named key?
 
 	return kp, true
-
-	// if true {
-	// 	if unicode.is_print(c) do dprintf("%c", c)
-	// 	else                   do dprintf("%d", c)
-	// 	continue
-	// }
 }

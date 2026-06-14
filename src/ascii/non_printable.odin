@@ -1,4 +1,4 @@
-package util
+package ascii
 
 NUL :: rune(0)
 SOH :: rune(1)
