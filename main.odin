@@ -2,9 +2,7 @@ package main
 
 import "core:os"
 import "core:fmt"
-import "core:io"
 import "core:strings"
-import "core:unicode"
 import "core:terminal"
 
 import "core:sys/posix"
@@ -56,34 +54,23 @@ main :: proc() {
 	strings.write_string(&sb, wkdir)
 
 	// main input loop
-	for {
+	loop: for {
 		
 		// display input buffer
 		dprint("\r", ascii.CLEAR_LINE, strings.to_string(sb), sep="")
 
-		// read input and handle errors and exits
-		c, size, err := io.read_rune(os.to_stream(os.stdin))
-		if err == .EOF || c == 3 || c == 13 do break
-		else if err != .None {
-			dprintf("Error: {}\r\n", err)
-			break
-		}
+		// read input keypress
+		press := read_press() or_break
 
-		// if true {
-		// 	if unicode.is_print(c) do dprintf("%c", c)
-		// 	else                   do dprintf("%d", c)
-		// 	continue
-		// }
-
-		if unicode.is_print(c) {
+		switch key in press.key {
+		case rune:
+			strings.write_rune(&sb, key)
 			
-			// printable, throw it in the buffer
-			strings.write_rune(&sb, c)
-
-		} else {
-			
-			// non printable, check for keybinds
-			if c == ascii.DEL do strings.pop_rune(&sb)
+		case NamedKey: 
+			#partial switch key {
+				case .Delete: strings.pop_rune(&sb)
+				case .Return: break loop
+			}
 		}
 	}
 
