@@ -63,14 +63,31 @@ main :: proc() {
 		press := read_press() or_break
 
 		switch key in press.key {
-		case rune:
-			strings.write_rune(&sb, key)
+
+		case rune: {
+
+			// key was a rune
 			
-		case NamedKey: 
+			if .Ctrl in press.modifiers {
+				// check for keybinds if ctrl is held
+				if key == 'c' do break loop
+
+			} else {
+				// no modifiers, write to buffer 
+				strings.write_rune(&sb, key)
+			}
+		}
+
+		case NamedKey: {
+
+			// key was a "named key"
+			
 			#partial switch key {
 				case .Delete: strings.pop_rune(&sb)
 				case .Return: break loop
 			}
+		}
+
 		}
 	}
 

@@ -1,4 +1,4 @@
-package util
+package ascii
 
 import "core:terminal/ansi"
 
