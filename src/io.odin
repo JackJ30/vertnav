@@ -4,10 +4,42 @@ import "core:fmt"
 import "core:os"
 import "core:io"
 import "core:unicode"
+import "core:sys/posix"
 
 import "ascii"
 
+/* terminal cooking functions */
+
+default_term: posix.termios
+
+uncook :: proc() {
+	// get default termios
+	posix.tcgetattr(posix.STDIN_FILENO, &default_term)
+
+	// configure and set new termios
+	raw := default_term
+	raw.c_iflag -= { .IXON, .ICRNL, .BRKINT, .INPCK, .ISTRIP }
+	raw.c_oflag -= { .OPOST }
+	raw.c_lflag -= { .ECHO, .ICANON, .ISIG, .IEXTEN }
+	raw.c_cflag += { .CS8 }
+	// raw.c_cc[.VMIN] = 0
+	// raw.c_cc[.VTIME] = 1
+	posix.tcsetattr(posix.STDIN_FILENO, .TCSAFLUSH, &raw)
+
+	// also open /dev/tty
+	open_tty()
+}
+
+recook :: proc() {
+	// reset to default ermios
+	posix.tcsetattr(posix.STDIN_FILENO, .TCSAFLUSH, &default_term)
+
+	// also close /dev/tty
+	close_tty()
+}
+
 /* dprint functions: writes to the screen output (dev tty) for drawing TUI */
+
 tty: ^os.File
 
 open_tty :: proc() {
@@ -15,6 +47,7 @@ open_tty :: proc() {
 	tty, err = os.open("/dev/tty", { .Write })
 	if err != nil do panic("/dev/tty failed to open")
 }
+
 close_tty :: proc() {
 	err := os.close(tty)
 	if err != nil do panic("/dev/tty failed to close")
@@ -27,7 +60,7 @@ dprint :: proc(args: ..any, sep: string = " ", flush: bool = true) -> int {
     return fmt.fprint(tty, ..args, sep=sep, flush=flush) 
 }
 
-/* get key */
+/* input parsing function (getkey) */
 
 Modifier :: enum {
 	Shift,
