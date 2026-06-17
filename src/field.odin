@@ -3,13 +3,13 @@ package main
 import "core:strings"
 import "core:os"
 
-InputField :: struct {
+Field :: struct {
 	sb: strings.Builder,
 }
 
-input_field_make :: proc() -> InputField {
+field_make :: proc() -> Field {
 
-	field: InputField
+	field: Field
 
 	field.sb = strings.builder_make()
 	wkdir, _ := os.get_working_directory(context.temp_allocator)
@@ -18,18 +18,18 @@ input_field_make :: proc() -> InputField {
 	return field
 }
 
-input_field_destroy :: proc(field: ^InputField) {
+field_destroy :: proc(field: ^Field) {
 	strings.builder_destroy(&field.sb)
 }
 
-input_field_insert :: proc(field: ^InputField, r: rune) {
+field_insert :: proc(field: ^Field, r: rune) {
 	strings.write_rune(&field.sb, r)
 }
 
-input_field_pop :: proc(field: ^InputField) {
+field_pop :: proc(field: ^Field) {
 	strings.pop_rune(&field.sb)
 }
 
-input_field_get_str :: proc(field: InputField) -> string {
+field_get_str :: proc(field: Field) -> string {
 	return strings.to_string(field.sb)
 }
