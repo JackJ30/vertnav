@@ -126,6 +126,5 @@ read_press :: proc() -> (KeyPress, bool) {
 		break
 	}
 
-
 	return kp, true
 }

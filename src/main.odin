@@ -54,9 +54,8 @@ main :: proc() {
 		}
 	}
 
-	display_clean()
-
 	// output the buffer
+	display_clean()
 	fmt.print(field_get_str(field))
 	if terminal.is_terminal(os.stdout) {
 		fmt.print("\r\n")
